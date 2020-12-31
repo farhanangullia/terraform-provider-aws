@@ -136,7 +136,37 @@ The following arguments are supported:
 -> **NOTE:** If you are creating Instances in a VPC, use `vpc_security_group_ids` instead.
 
 * `vpc_security_group_ids` - (Optional, VPC only) A list of security group IDs to associate with.
+<<<<<<< HEAD
 
+=======
+* `subnet_id` - (Optional) The VPC Subnet ID to launch in.
+* `associate_public_ip_address` - (Optional) Associate a public ip address with an instance in a VPC.  Boolean value.
+* `private_ip` - (Optional) Private IP address to associate with the
+     instance in a VPC.
+* `secondary_private_ips` - (Optional) A list of secondary private IPv4 addresses to assign to the instance's primary network interface (eth0) in a VPC. Can only be assigned to the primary network interface (eth0) attached at instance creation, not a pre-existing network interface i.e. referenced in a `network_interface` block. Refer to the [Elastic network interfaces documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI) to see the maximum number of private IP addresses allowed per instance type.
+* `source_dest_check` - (Optional) Controls if traffic is routed to the instance when
+  the destination address does not match the instance. Used for NAT or VPNs. Defaults true.
+* `user_data` - (Optional) The user data to provide when launching the instance. Do not pass gzip-compressed data via this argument; see `user_data_base64` instead.
+* `user_data_base64` - (Optional) Can be used instead of `user_data` to pass base64-encoded binary data directly. Use this instead of `user_data` whenever the value is not a valid UTF-8 string. For example, gzip-encoded user data must be base64-encoded and passed via this argument to avoid corruption.
+* `iam_instance_profile` - (Optional) The IAM Instance Profile to
+  launch the instance with. Specified as the name of the Instance Profile. Ensure your credentials have the correct permission to assign the instance profile according to the [EC2 documentation](http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html#roles-usingrole-ec2instance-permissions), notably `iam:PassRole`.
+* `ipv6_address_count`- (Optional) A number of IPv6 addresses to associate with the primary network interface. Amazon EC2 chooses the IPv6 addresses from the range of your subnet.
+* `ipv6_addresses` - (Optional) Specify one or more IPv6 addresses from the range of the subnet to associate with the primary network interface
+* `tags` - (Optional) A map of tags to assign to the resource.
+* `volume_tags` - (Optional) A map of tags to assign to the devices created by the instance at launch time.
+* `root_block_device` - (Optional) Customize details about the root block
+  device of the instance. See [Block Devices](#block-devices) below for details.
+* `ebs_block_device` - (Optional) Additional EBS block devices to attach to the
+  instance.  Block device configurations only apply on resource creation. See [Block Devices](#block-devices) below for details on attributes and drift detection.
+* `ephemeral_block_device` - (Optional) Customize Ephemeral (also known as
+  "Instance Store") volumes on the instance. See [Block Devices](#block-devices) below for details.
+* `network_interface` - (Optional) Customize network interfaces to be attached at instance boot time. See [Network Interfaces](#network-interfaces) below for more details.
+* `credit_specification` - (Optional) Customize the credit specification of the instance. See [Credit Specification](#credit-specification) below for more details.
+* `hibernation` - (Optional) If true, the launched EC2 instance will support hibernation.
+* `metadata_options` - (Optional) Customize the metadata options of the instance. See [Metadata Options](#metadata-options) below for more details.
+* `enclave_options` - (Optional) Enable Nitro Enclaves on launched instances. See [Enclave Options](#enclave-options) below for more details.
+* `capacity_reservation_specification` - (Optional) Describes an instance's Capacity Reservation targeting option. See [Capacity Reservation Specification](#capacity-reservation-specification) below for more details.
+>>>>>>> 00bfed48d... Added support for capacity_reservation_specification argument block which includes capacity_reservation_preference, capacity_reservation_target block which includes capacity_reservation_id and capacity_reservation_resource_group_arn arguments. Updated aws_instance resource website to reflect this new feature.
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/blocks/resources/syntax.html#operation-timeouts) for certain actions:
@@ -231,7 +261,35 @@ The `enclave_options` block supports the following:
 
 For more information, see the documentation on [Nitro Enclaves](https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html).
 
+<<<<<<< HEAD
 ### Metadata Options
+=======
+### Capacity Reservation Specification
+
+~> **NOTE:** You can specify only one argument at a time. If you specify both capacity_reservation_preference and capacity_reservation_target, the request fails.
+
+Capacity reservation specification can be applied to the EC2 Instance at launch time.
+
+The `capacity_reservation_specification` block supports the following:
+
+* `capacity_reservation_preference` - (Optional) Indicates the instance's Capacity Reservation preferences. Can be `"open"` or `"none"`. (Default: `"open"`).
+* `capacity_reservation_target` - (Optional) Information about the target Capacity Reservation or Capacity Reservation group. See [Capacity Reservation Target](#capacity-reservation-target) below for more details.
+    
+For more information, see the documentation on [Capacity Reservations](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/capacity-reservations-using.html).
+
+### Capacity Reservation Target
+
+~> **NOTE:** You can specify only one argument at a time. If you specify both capacity_reservation_id and capacity_reservation_resource_group_arn, the request fails.
+
+Describes a target Capacity Reservation or Capacity Reservation group.
+
+This `capacity_reservation_target` block supports the following:
+
+* `capacity_reservation_id` - (Optional) The ID of the Capacity Reservation in which to run the instance.
+* `capacity_reservation_resource_group_arn` - (Optional) The ARN of the Capacity Reservation resource group in which to run the instance.
+    
+### Example
+>>>>>>> 00bfed48d... Added support for capacity_reservation_specification argument block which includes capacity_reservation_preference, capacity_reservation_target block which includes capacity_reservation_id and capacity_reservation_resource_group_arn arguments. Updated aws_instance resource website to reflect this new feature.
 
 Metadata options can be applied/modified to the EC2 Instance at any time.
 
@@ -251,9 +309,23 @@ The `network_interface` configuration block _does_, however, allow users to supp
 
 Each `network_interface` block supports the following:
 
+<<<<<<< HEAD
 * `delete_on_termination` - (Optional) Whether or not to delete the network interface on instance termination. Defaults to `false`. Currently, the only valid value is `false`, as this is only supported when creating new network interfaces when launching an instance.
 * `device_index` - (Required) Integer index of the network interface attachment. Limited by instance type.
 * `network_interface_id` - (Required) ID of the network interface to attach.
+=======
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+  
+  capacity_reservation_specification {
+    capacity_reservation_target {
+      capacity_reservation_id = "cr-1234567890abcdef1"
+    }
+  }
+}
+```
+>>>>>>> 00bfed48d... Added support for capacity_reservation_specification argument block which includes capacity_reservation_preference, capacity_reservation_target block which includes capacity_reservation_id and capacity_reservation_resource_group_arn arguments. Updated aws_instance resource website to reflect this new feature.
 
 ## Attributes Reference
 
