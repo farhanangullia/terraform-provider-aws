@@ -3053,6 +3053,97 @@ func TestAccAWSDBInstance_RestoreToPointInTime_SourceResourceID(t *testing.T) {
 	})
 }
 
+// execute test cases: basic, coipEnabled, restorePIT, restoreSnapshot
+
+// create a DB instance
+// modify a DB instance
+
+func TestAccAWSDBInstance_COIPEnabled(t *testing.T) {
+	var v rds.DBInstance
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAWSDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAWSDBInstanceConfig_COIPEnabled(acctest.RandInt()),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSDBInstanceExists("aws_db_instance.bar", &v),
+					testAccCheckAWSDBInstanceAttributes(&v),
+					resource.TestCheckResourceAttr(
+						"aws_db_instance.bar", "customer_owned_ip_enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
+// restore a DB instance to a specific time
+// restore from disabled coip instance. check attribute if enabled in target.
+func TestAccAWSDBInstance_RestoreToPointInTime_SourceIdentifier_XX(t *testing.T) {
+	var dbInstance, sourceDbInstance rds.DBInstance
+	sourceName := "aws_db_instance.test"
+	resourceName := "aws_db_instance.restore"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAWSDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAWSDBInstanceConfig_RestoreToPointInTime_SourceIdentifier(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSDBInstanceExists(sourceName, &sourceDbInstance),
+					testAccCheckAWSDBInstanceExists(resourceName, &dbInstance),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"apply_immediately",
+					"delete_automated_backups",
+					"final_snapshot_identifier",
+					"latest_restorable_time", // dynamic value of a DBInstance
+					"password",
+					"restore_to_point_in_time",
+					"skip_final_snapshot",
+				},
+			},
+		},
+	})
+}
+
+// Restore a DB instance from snapshot
+func TestAccAWSDBInstance_CoipEnabled_SnapshotIdentifier(t *testing.T) {
+	var dbInstance, sourceDbInstance rds.DBInstance
+	var dbSnapshot rds.DBSnapshot
+
+	rName := acctest.RandomWithPrefix("tf-acc-test")
+	sourceDbResourceName := "aws_db_instance.source"
+	snapshotResourceName := "aws_db_snapshot.test"
+	resourceName := "aws_db_instance.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAWSDBInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAWSDBInstanceConfig_SnapshotIdentifier_IamDatabaseAuthenticationEnabled(rName, true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAWSDBInstanceExists(sourceDbResourceName, &sourceDbInstance),
+					testAccCheckDbSnapshotExists(snapshotResourceName, &dbSnapshot),
+					testAccCheckAWSDBInstanceExists(resourceName, &dbInstance),
+					resource.TestCheckResourceAttr(resourceName, "iam_database_authentication_enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
 func testAccAWSDBInstanceConfig_orderableClass(engine, version, license string) string {
 	return fmt.Sprintf(`
 data "aws_rds_orderable_db_instance" "test" {
@@ -7242,6 +7333,105 @@ resource "aws_db_instance" "test" {
 
   backup_retention_period  = 1
   delete_automated_backups = false
+}
+`, rName))
+}
+
+func testAccAWSDBInstanceConfig_COIPEnabled(n int) string {
+	return fmt.Sprintf(`
+data "aws_rds_engine_version" "default" {
+  engine = "mysql"
+}
+
+data "aws_rds_orderable_db_instance" "test" {
+  engine                     = data.aws_rds_engine_version.default.engine
+  engine_version             = data.aws_rds_engine_version.default.version
+  license_model              = "general-public-license"
+  storage_type               = "standard"
+  preferred_instance_classes = ["db.t3.small", "db.t2.small", "db.t2.medium"]
+
+  supports_iam_database_authentication = true
+}
+
+resource "aws_db_instance" "bar" {
+  identifier                          = "foobarbaz-test-terraform-%d"
+  allocated_storage                   = 10
+  engine                              = data.aws_rds_engine_version.default.engine
+  engine_version                      = data.aws_rds_engine_version.default.version
+  instance_class                      = data.aws_rds_orderable_db_instance.test.instance_class
+  name                                = "baz"
+  password                            = "barbarbarbar"
+  username                            = "foo"
+  backup_retention_period             = 0
+  skip_final_snapshot                 = true
+  parameter_group_name                = "default.${data.aws_rds_engine_version.default.parameter_group_family}"
+  customer_owned_ip_enabled = true
+}
+`, n)
+}
+
+// create Subnet that uses outpost arn AND availability zone of the outpost. Required parameters those 2 plus VpcId AND CidrBlock https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateSubnet.html
+	// https://docs.aws.amazon.com/outposts/latest/userguide/outposts-networking-components.html
+// create subnet group with list of outpost subnet ids (use data source for subnets) https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBSubnetGroup.html
+// launch DB with AZ of outpost, VPC security group of outpost AND DB subnet group
+func testAccAWSDBInstanceConfig_CoipEnabled_WithSubnetGroup(rName string) string {
+	return composeConfig(
+		testAccAWSDBInstanceConfig_orderableClassMysql(),
+		testAccAvailableAZsNoOptInConfig(),
+		fmt.Sprintf(`
+resource "aws_vpc" "foo" {
+  cidr_block = "10.1.0.0/16"
+
+  tags = {
+    Name = "terraform-testacc-db-instance-with-subnet-group"
+  }
+}
+
+resource "aws_subnet" "foo" {
+  cidr_block        = "10.1.1.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  vpc_id            = aws_vpc.foo.id
+
+  tags = {
+    Name = "tf-acc-db-instance-with-subnet-group-1"
+  }
+}
+
+resource "aws_subnet" "bar" {
+  cidr_block        = "10.1.2.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+  vpc_id            = aws_vpc.foo.id
+
+  tags = {
+    Name = "tf-acc-db-instance-with-subnet-group-2"
+  }
+}
+
+resource "aws_db_subnet_group" "foo" {
+  name       = "foo-%[1]s"
+  subnet_ids = [aws_subnet.foo.id, aws_subnet.bar.id]
+
+  tags = {
+    Name = "tf-dbsubnet-group-test"
+  }
+}
+
+resource "aws_db_instance" "bar" {
+  identifier           = "mydb-rds-%[1]s"
+  engine               = data.aws_rds_orderable_db_instance.test.engine
+  engine_version       = data.aws_rds_orderable_db_instance.test.engine_version
+  instance_class       = data.aws_rds_orderable_db_instance.test.instance_class
+  name                 = "mydb"
+  username             = "foo"
+  password             = "barbarbar"
+  parameter_group_name = "default.mysql5.6"
+  db_subnet_group_name = aws_db_subnet_group.foo.name
+  port                 = 3305
+  allocated_storage    = 10
+  skip_final_snapshot  = true
+
+  backup_retention_period = 0
+  apply_immediately       = true
 }
 `, rName))
 }
