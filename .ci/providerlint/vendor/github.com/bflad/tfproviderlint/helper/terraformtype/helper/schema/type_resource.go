@@ -9,28 +9,24 @@ import (
 )
 
 const (
-	ResourceFieldCreate               = `Create`
-	ResourceFieldCreateContext        = `CreateContext`
-	ResourceFieldCreateWithoutTimeout = `CreateWithoutTimeout`
-	ResourceFieldCustomizeDiff        = `CustomizeDiff`
-	ResourceFieldDelete               = `Delete`
-	ResourceFieldDeleteContext        = `DeleteContext`
-	ResourceFieldDeleteWithoutTimeout = `DeleteWithoutTimeout`
-	ResourceFieldDeprecationMessage   = `DeprecationMessage`
-	ResourceFieldDescription          = `Description`
-	ResourceFieldExists               = `Exists`
-	ResourceFieldImporter             = `Importer`
-	ResourceFieldMigrateState         = `MigrateState`
-	ResourceFieldRead                 = `Read`
-	ResourceFieldReadContext          = `ReadContext`
-	ResourceFieldReadWithoutTimeout   = `ReadWithoutTimeout`
-	ResourceFieldSchema               = `Schema`
-	ResourceFieldSchemaVersion        = `SchemaVersion`
-	ResourceFieldStateUpgraders       = `StateUpgraders`
-	ResourceFieldTimeouts             = `Timeouts`
-	ResourceFieldUpdate               = `Update`
-	ResourceFieldUpdateContext        = `UpdateContext`
-	ResourceFieldUpdateWithoutTimeout = `UpdateWithoutTimeout`
+	ResourceFieldCreate             = `Create`
+	ResourceFieldCreateContext      = `CreateContext`
+	ResourceFieldCustomizeDiff      = `CustomizeDiff`
+	ResourceFieldDelete             = `Delete`
+	ResourceFieldDeleteContext      = `DeleteContext`
+	ResourceFieldDeprecationMessage = `DeprecationMessage`
+	ResourceFieldDescription        = `Description`
+	ResourceFieldExists             = `Exists`
+	ResourceFieldImporter           = `Importer`
+	ResourceFieldMigrateState       = `MigrateState`
+	ResourceFieldRead               = `Read`
+	ResourceFieldReadContext        = `ReadContext`
+	ResourceFieldSchema             = `Schema`
+	ResourceFieldSchemaVersion      = `SchemaVersion`
+	ResourceFieldStateUpgraders     = `StateUpgraders`
+	ResourceFieldTimeouts           = `Timeouts`
+	ResourceFieldUpdate             = `Update`
+	ResourceFieldUpdateContext      = `UpdateContext`
 
 	TypeNameResource = `Resource`
 )

@@ -9,7 +9,6 @@ import (
 
 const (
 	TestCaseFieldCheckDestroy              = `CheckDestroy`
-	TestCaseFieldErrorCheck                = `ErrorCheck`
 	TestCaseFieldIDRefreshName             = `IDRefreshName`
 	TestCaseFieldIDRefreshIgnore           = `IDRefreshIgnore`
 	TestCaseFieldIsUnitTest                = `IsUnitTest`

@@ -41,7 +41,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				continue
 			}
 
-			if schemaInfo.Fields["Description"] != nil {
+			if schemaInfo.Schema.Description != "" {
 				continue
 			}
 

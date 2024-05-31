@@ -40,7 +40,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			continue
 		}
 
-		if resourceInfo.Fields["Description"] != nil {
+		if resourceInfo.Resource.Description != "" {
 			continue
 		}
 
